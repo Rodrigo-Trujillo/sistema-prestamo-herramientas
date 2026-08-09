@@ -14,3 +14,7 @@ def guardar(nombre_archivo, datos):
     with open(nombre_archivo, "w", encoding='utf-8') as archivo:
         json.dump(datos, archivo)
 
+def siguiente_id(lista):
+    if not lista:
+        return 1
+    return max(elemento["id"] for elemento in lista ) + 1 

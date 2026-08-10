@@ -24,12 +24,7 @@ def menu_administrador():
     print("8. Volver")
 
 
-def menu_usuario():
-    print("\n--- MENU VECINO ---")
-    print("1. Ver Herramientas Disponibles")
-    print("2. Solicitar Prestamo")
-    print("3. Ver Mi Historial")
-    print("4. Volver")
+ 
 
 
 def opciones_administrador():

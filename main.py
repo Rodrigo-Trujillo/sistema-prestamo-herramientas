@@ -76,9 +76,22 @@ def opciones_administrador():
             print("\n-- Herramientas con stock bajo --")
             for h in mod_reportes.stock_bajo():
                 print(h["nombre"], "-", h["cantidad_disponible"], "unidad(es)")
+
             print("\n-- Prestamos activos --")
             for p in mod_reportes.prestamos_activos():
                 print("Prestamo", p["id"], "- vence el", p["fecha_devolucion_estimada"])
+
+            print("\n-- Prestamos vencidos --")
+            for p in mod_reportes.prestamos_vencidos():
+                print("Prestamo", p["id"], "- vencio el", p["fecha_devolucion_estimada"])
+
+            print("\n-- Herramientas mas solicitadas --")
+            for item in mod_reportes.herramientas_mas_solicitadas():
+                print(item["nombre"], "-", item["veces"], "vez(ces)")
+
+            print("\n-- Vecinos que mas solicitan --")
+            for item in mod_reportes.usuarios_mas_solicitantes():
+                print(item["nombre"], "-", item["veces"], "vez(ces)")
         elif opcion == "8":
             break
         else:

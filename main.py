@@ -12,6 +12,18 @@ def pedir_numero_entero(mensaje):
             print("Debes ingresar un numero entero")
 
 
+def nombre_herramienta(id_herramienta):
+    herramienta = mod_herramientas.buscar_herramienta(id_herramienta)
+    return herramienta["nombre"] if herramienta else "Desconocida"
+
+
+def nombre_usuario(id_usuario):
+    usuario = mod_usuarios.buscar_usuario(id_usuario)
+    if usuario:
+        return usuario["nombres"] + " " + usuario["apellidos"]
+    return "Desconocido"
+
+
 def menu_administrador():
     print("\n--- MENU ADMINISTRADOR ---")
     print("1. Registrar Herramienta")
@@ -21,7 +33,8 @@ def menu_administrador():
     print("5. Aprobar solicitud de prestamo")
     print("6. Registrar Devolucion")
     print("7. Ver Reportes")
-    print("8. Volver")
+    print("8. Actualizar Vecino")
+    print("9. Volver")
 
 
 def menu_usuario():
@@ -41,37 +54,65 @@ def opciones_administrador():
             categoria = input("Categoria: ").strip()
             cantidad = pedir_numero_entero("Cantidad: ")
             valor = pedir_numero_entero("Valor Estimado: ")
-            mod_herramientas.crear_herramienta(nombre, categoria, cantidad, valor)
-            print("Herramienta Registrada.")
+            nueva = mod_herramientas.crear_herramienta(nombre, categoria, cantidad, valor)
+            print("Herramienta Registrada con ID", nueva["id"], "-", nueva["nombre"])
+
         elif opcion == "2":
+            print("\nID  NOMBRE               DISPONIBLE  ESTADO")
             for h in mod_herramientas.listar_herramientas():
                 print(h["id"], "-", h["nombre"], "-",
                       h["cantidad_disponible"], "disp. -", h["estado"])
+
         elif opcion == "3":
             nombres = input("Nombres: ").strip()
             apellidos = input("Apellidos: ").strip()
             telefono = input("Telefono: ").strip()
             direccion = input("Direccion: ").strip()
-            mod_usuarios.crear_usuario(nombres, apellidos, telefono, direccion, "residente")
-            print("Vecino Registrado.")
+            nuevo = mod_usuarios.crear_usuario(nombres, apellidos, telefono, direccion, "residente")
+            print("Vecino Registrado con ID", nuevo["id"], "-", nuevo["nombres"], nuevo["apellidos"])
+
         elif opcion == "4":
+            print("\nID  NOMBRE COMPLETO          TELEFONO")
             for u in mod_usuarios.listar_usuarios():
                 print(u["id"], "-", u["nombres"], u["apellidos"], "-", u["telefono"])
+
         elif opcion == "5":
-            for p in mod_prestamos.listar_prestamos():
-                if p["estado"] == "pendiente":
-                    print("Prestamo", p["id"], "- usuario", p["id_usuario"])
-            id_prestamo = pedir_numero_entero("Id prestamo a aprobar: ")
-            if mod_prestamos.aprobar_prestamo(id_prestamo):
-                print("Prestamo Aprobado.")
+            pendientes = [p for p in mod_prestamos.listar_prestamos() if p["estado"] == "pendiente"]
+            if not pendientes:
+                print("No hay solicitudes pendientes.")
             else:
-                print("No se pudo aprobar. Revisa el log.")
+                for p in pendientes:
+                    print("Prestamo", p["id"], "-", nombre_usuario(p["id_usuario"]),
+                          "solicita", p["cantidad"], "x", nombre_herramienta(p["id_herramienta"]))
+                id_prestamo = pedir_numero_entero("\nId del prestamo a procesar: ")
+                decision = input("¿Aprobar o Rechazar? (A/R): ").strip().upper()
+                if decision == "A":
+                    if mod_prestamos.aprobar_prestamo(id_prestamo):
+                        print("Prestamo Aprobado.")
+                    else:
+                        print("No se pudo aprobar (sin stock suficiente o id invalido). Revisa el log.")
+                elif decision == "R":
+                    motivo = input("Motivo del rechazo (opcional): ").strip()
+                    if mod_prestamos.rechazar_prestamo(id_prestamo, motivo):
+                        print("Prestamo Rechazado.")
+                    else:
+                        print("No se pudo rechazar. Revisa que el id sea correcto.")
+                else:
+                    print("Opcion invalida. No se realizo ningun cambio.")
+
         elif opcion == "6":
+            activos = [p for p in mod_prestamos.listar_prestamos() if p["estado"] == "activo"]
+            if not activos:
+                print("No hay prestamos activos.")
+            for p in activos:
+                print("Prestamo", p["id"], "-", nombre_usuario(p["id_usuario"]),
+                      "tiene", p["cantidad"], "x", nombre_herramienta(p["id_herramienta"]))
             id_prestamo = pedir_numero_entero("Id prestamo devuelto: ")
             if mod_prestamos.devolver_prestamo(id_prestamo):
                 print("Devolucion registrada.")
             else:
                 print("No se pudo registrar la devolucion.")
+
         elif opcion == "7":
             print("\n-- Herramientas con stock bajo --")
             for h in mod_reportes.stock_bajo():
@@ -79,11 +120,13 @@ def opciones_administrador():
 
             print("\n-- Prestamos activos --")
             for p in mod_reportes.prestamos_activos():
-                print("Prestamo", p["id"], "- vence el", p["fecha_devolucion_estimada"])
+                print("Prestamo", p["id"], "-", nombre_usuario(p["id_usuario"]), "-",
+                      nombre_herramienta(p["id_herramienta"]), "- vence el", p["fecha_devolucion_estimada"])
 
             print("\n-- Prestamos vencidos --")
             for p in mod_reportes.prestamos_vencidos():
-                print("Prestamo", p["id"], "- vencio el", p["fecha_devolucion_estimada"])
+                print("Prestamo", p["id"], "-", nombre_usuario(p["id_usuario"]), "-",
+                      nombre_herramienta(p["id_herramienta"]), "- vencio el", p["fecha_devolucion_estimada"])
 
             print("\n-- Herramientas mas solicitadas --")
             for item in mod_reportes.herramientas_mas_solicitadas():
@@ -92,36 +135,86 @@ def opciones_administrador():
             print("\n-- Vecinos que mas solicitan --")
             for item in mod_reportes.usuarios_mas_solicitantes():
                 print(item["nombre"], "-", item["veces"], "vez(ces)")
+
         elif opcion == "8":
+            print("\nVecinos registrados:")
+            for u in mod_usuarios.listar_usuarios():
+                print(u["id"], "-", u["nombres"], u["apellidos"], "-", u["telefono"])
+            id_usuario = pedir_numero_entero("\nId del vecino a actualizar: ")
+            print("¿Qué dato deseas actualizar?")
+            print("1. Telefono")
+            print("2. Direccion")
+            campo_opcion = input("Opcion: ").strip()
+            if campo_opcion == "1":
+                nuevo_valor = input("Nuevo telefono: ").strip()
+                if mod_usuarios.actualizar_usuario(id_usuario, "telefono", nuevo_valor):
+                    print("Telefono actualizado correctamente.")
+                else:
+                    print("No se pudo actualizar. Verifica el id.")
+            elif campo_opcion == "2":
+                nuevo_valor = input("Nueva direccion: ").strip()
+                if mod_usuarios.actualizar_usuario(id_usuario, "direccion", nuevo_valor):
+                    print("Direccion actualizada correctamente.")
+                else:
+                    print("No se pudo actualizar. Verifica el id.")
+            else:
+                print("Opcion invalida.")
+
+        elif opcion == "9":
             break
         else:
             print("Opcion invalida.")
 
 
 def opciones_usuario():
-    id_usuario = pedir_numero_entero("Ingresa tu id de vecino: ")
+    print("\nVecinos registrados:")
+    print("ID  NOMBRE COMPLETO")
+    for u in mod_usuarios.listar_usuarios():
+        print(u["id"], "-", u["nombres"], u["apellidos"])
+    id_usuario = pedir_numero_entero("\nIngresa tu id de vecino: ")
+    print("Hola,", nombre_usuario(id_usuario))
     while True:
         menu_usuario()
         opcion = input("Opcion: ").strip()
         if opcion == "1":
+            print("\nID  NOMBRE               DISPONIBLE")
             for h in mod_herramientas.listar_herramientas():
                 if h["estado"] == "activa":
                     print(h["id"], "-", h["nombre"], "-",
                           h["cantidad_disponible"], "disponible(s)")
+
         elif opcion == "2":
-            id_herramienta = pedir_numero_entero("Id de la herramienta: ")
+            print("\nHerramientas disponibles:")
+            print("ID  NOMBRE               DISPONIBLE")
+            for h in mod_herramientas.listar_herramientas():
+                if h["estado"] == "activa" and h["cantidad_disponible"] > 0:
+                    print(h["id"], "-", h["nombre"], "-",
+                          h["cantidad_disponible"], "disponible(s)")
+            id_herramienta = pedir_numero_entero("\nId de la herramienta: ")
             cantidad = pedir_numero_entero("Cantidad: ")
             observaciones = input("Observaciones: ").strip()
+
+            herramienta = mod_herramientas.buscar_herramienta(id_herramienta)
+            if herramienta and cantidad > herramienta["cantidad_disponible"]:
+                print("Aviso: pediste", cantidad, "unidades, pero ahora mismo solo hay",
+                      herramienta["cantidad_disponible"], "disponibles. La solicitud se enviara",
+                      "de todas formas, pero es probable que el administrador la rechace a menos",
+                      "que el stock cambie antes de que la revise.")
+
             solicitud = mod_prestamos.solicitar_prestamo(
                 id_usuario, id_herramienta, cantidad, observaciones)
             if solicitud:
-                print("Solicitud creada con id", solicitud["id"], "- espera aprobacion.")
+                print("Solicitud creada con ID", solicitud["id"], "-", nombre_usuario(id_usuario),
+                      "solicita", cantidad, "x", nombre_herramienta(id_herramienta), "- espera aprobacion.")
             else:
                 print("No se pudo crear la solicitud.")
+
         elif opcion == "3":
             for p in mod_prestamos.listar_prestamos():
                 if p["id_usuario"] == id_usuario:
-                    print("Prestamo", p["id"], "- herramienta", p["id_herramienta"], "-", p["estado"])
+                    print("Prestamo", p["id"], "-", nombre_herramienta(p["id_herramienta"]),
+                          "-", p["cantidad"], "unidad(es) -", p["estado"])
+
         elif opcion == "4":
             break
         else:

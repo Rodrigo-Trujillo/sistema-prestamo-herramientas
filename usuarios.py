@@ -37,6 +37,7 @@ def actualizar_usuario(id_usuario, campo, nuevo_valor):
         if usuario["id"] == id_usuario:
             usuario[campo] = nuevo_valor
             guardar(ARCHIVO, usuarios)
+            registrar_evento("Usuario " + str(id_usuario) + ": " + campo + " actualizado")
             return True
     return False
 
@@ -47,5 +48,7 @@ def eliminar_usuario(id_usuario):
         if usuario["id"] == id_usuario:
             usuarios.remove(usuario)
             guardar(ARCHIVO, usuarios)
+            registrar_evento("Usuario eliminado: " + usuario["nombres"] + " " + usuario["apellidos"]
+                              + " (id " + str(id_usuario) + ")")
             return True
     return False

@@ -49,6 +49,11 @@ def nombre_usuario(id_usuario):
     return "Desconocido"
 
 
+def prestamos_activos_de_herramienta(id_herramienta):
+    return [p for p in mod_prestamos.listar_prestamos()
+            if p["id_herramienta"] == id_herramienta and p["estado"] == "activo"]
+
+
 def emoji_estado(estado):
     iconos = {
         "pendiente": "\u23f3",
@@ -112,12 +117,13 @@ def menu_administrador():
     ui.opcion(11, "\u2696\ufe0f", "Aprobar / Rechazar Solicitud")
     ui.opcion(12, "\U0001f504", "Registrar Devolucion")
     ui.opcion(13, "\U0001f4ca", "Ver Reportes")
-    ui.opcion(14, "\U0001f519", "Volver")
+    ui.opcion(14, "\U0001f4dc", "Historial de un Vecino")
+    ui.opcion(15, "\U0001f519", "Volver")
 
 
 def menu_usuario():
     ui.seccion("\U0001f3e0  MENU VECINO")
-    ui.opcion(1, "\U0001f50e", "Ver Herramientas Disponibles")
+    ui.opcion(1, "\U0001f50e", "Consultar Herramientas")
     ui.opcion(2, "\U0001f4e5", "Solicitar Prestamo")
     ui.opcion(3, "\U0001f4dc", "Ver Mi Historial")
     ui.opcion(4, "\U0001f519", "Volver")
@@ -169,6 +175,7 @@ def opciones_administrador():
                 ui.opcion(1, "\U0001f524", "Nombre")
                 ui.opcion(2, "\U0001f3f7\ufe0f", "Categoria")
                 ui.opcion(3, "\U0001f4b2", "Valor estimado")
+                ui.opcion(4, "\U0001f504", "Estado")
                 campo_opcion = input("\n  Opcion: ").strip()
                 campo = None
                 nuevo_valor = None
@@ -181,6 +188,17 @@ def opciones_administrador():
                 elif campo_opcion == "3":
                     nuevo_valor = pedir_numero_positivo("  Nuevo valor estimado: ")
                     campo = "valor_estimado"
+                elif campo_opcion == "4":
+                    print("  1. Activa")
+                    print("  2. En reparacion")
+                    print("  3. Fuera de servicio")
+                    estado_opcion = input("  Opcion: ").strip()
+                    estados = {"1": "activa", "2": "en reparacion", "3": "fuera de servicio"}
+                    if estado_opcion in estados:
+                        nuevo_valor = estados[estado_opcion]
+                        campo = "estado"
+                    else:
+                        ui.error("Opcion invalida.")
                 else:
                     ui.error("Opcion invalida.")
 
@@ -206,9 +224,14 @@ def opciones_administrador():
             apellidos = pedir_texto_obligatorio("  Apellidos: ")
             telefono = pedir_telefono("  Telefono (10 digitos): ")
             direccion = pedir_texto_obligatorio("  Direccion: ")
-            nuevo = mod_usuarios.crear_usuario(nombres, apellidos, telefono, direccion, "residente")
+            print("\n  Tipo de usuario:")
+            ui.opcion(1, "\U0001f3e0", "Residente")
+            ui.opcion(2, "\U0001f9d1\u200d\U0001f4bc", "Administrador")
+            tipo_opcion = input("\n  Opcion: ").strip()
+            tipo = "administrador" if tipo_opcion == "2" else "residente"
+            nuevo = mod_usuarios.crear_usuario(nombres, apellidos, telefono, direccion, tipo)
             ui.exito("Vecino registrado con ID " + str(nuevo["id"]) + " - "
-                     + nuevo["nombres"] + " " + nuevo["apellidos"])
+                     + nuevo["nombres"] + " " + nuevo["apellidos"] + " (" + tipo + ")")
 
         elif opcion == "7":
             ui.subtitulo("Directorio de vecinos")
@@ -239,6 +262,9 @@ def opciones_administrador():
                 print("\n  Que dato deseas actualizar?")
                 ui.opcion(1, "\U0001f4de", "Telefono")
                 ui.opcion(2, "\U0001f3e0", "Direccion")
+                ui.opcion(3, "\U0001f524", "Nombres")
+                ui.opcion(4, "\U0001f524", "Apellidos")
+                ui.opcion(5, "\U0001f4bc", "Tipo de usuario")
                 campo_opcion = input("\n  Opcion: ").strip()
                 if campo_opcion == "1":
                     nuevo_valor = pedir_telefono("  Nuevo telefono (10 digitos): ")
@@ -250,6 +276,27 @@ def opciones_administrador():
                     nuevo_valor = pedir_texto_obligatorio("  Nueva direccion: ")
                     if mod_usuarios.actualizar_usuario(id_usuario, "direccion", nuevo_valor):
                         ui.exito("Direccion actualizada correctamente.")
+                    else:
+                        ui.error("No se pudo actualizar.")
+                elif campo_opcion == "3":
+                    nuevo_valor = pedir_texto_obligatorio("  Nuevos nombres: ")
+                    if mod_usuarios.actualizar_usuario(id_usuario, "nombres", nuevo_valor):
+                        ui.exito("Nombres actualizados correctamente.")
+                    else:
+                        ui.error("No se pudo actualizar.")
+                elif campo_opcion == "4":
+                    nuevo_valor = pedir_texto_obligatorio("  Nuevos apellidos: ")
+                    if mod_usuarios.actualizar_usuario(id_usuario, "apellidos", nuevo_valor):
+                        ui.exito("Apellidos actualizados correctamente.")
+                    else:
+                        ui.error("No se pudo actualizar.")
+                elif campo_opcion == "5":
+                    print("  1. Residente")
+                    print("  2. Administrador")
+                    tipo_opcion = input("  Opcion: ").strip()
+                    nuevo_tipo = "administrador" if tipo_opcion == "2" else "residente"
+                    if mod_usuarios.actualizar_usuario(id_usuario, "tipo_usuario", nuevo_tipo):
+                        ui.exito("Tipo de usuario actualizado a '" + nuevo_tipo + "'.")
                     else:
                         ui.error("No se pudo actualizar.")
                 else:
@@ -359,6 +406,24 @@ def opciones_administrador():
                 ui.item(item["nombre"] + " - " + str(item["veces"]) + " vez(ces)")
 
         elif opcion == "14":
+            ui.subtitulo("Historial de prestamos de un vecino")
+            mostrar_tabla_vecinos()
+            id_usuario = pedir_numero_entero("\n  Id del vecino: ")
+            if mod_usuarios.buscar_usuario(id_usuario) is None:
+                ui.error("Ese vecino no existe. Revisa el id en la lista de arriba.")
+            else:
+                historial = mod_reportes.historial_usuario(id_usuario)
+                if not historial:
+                    ui.aviso("Ese vecino no tiene prestamos registrados.")
+                else:
+                    ui.linea()
+                    for p in historial:
+                        print("  " + emoji_estado(p["estado"]) + " Prestamo " + str(p["id"]) + " - "
+                              + nombre_herramienta(p["id_herramienta"]) + " - "
+                              + str(p["cantidad"]) + " unidad(es) - " + p["estado"])
+                    ui.linea()
+
+        elif opcion == "15":
             break
         else:
             ui.error("Opcion invalida. Intenta de nuevo.")
@@ -378,8 +443,24 @@ def opciones_usuario():
         opcion = input("\n  Selecciona una opcion: ").strip()
 
         if opcion == "1":
-            ui.subtitulo("Herramientas disponibles")
-            mostrar_tabla_herramientas(solo_disponibles=True)
+            ui.subtitulo("Estado de las herramientas")
+            herramientas = mod_herramientas.listar_herramientas()
+            if not herramientas:
+                ui.aviso("No hay herramientas registradas.")
+            else:
+                for h in herramientas:
+                    print("\n  " + emoji_estado(h["estado"]) + " " + h["nombre"]
+                          + " (" + h["categoria"] + ") - " + str(h["cantidad_disponible"])
+                          + " disponible(s) - " + h["estado"])
+                    if h["cantidad_disponible"] <= 0 or h["estado"] != "activa":
+                        activos = prestamos_activos_de_herramienta(h["id"])
+                        if activos:
+                            for p in activos:
+                                print("     -> En manos de " + nombre_usuario(p["id_usuario"])
+                                      + ", disponible aprox. el " + p["fecha_devolucion_estimada"])
+                        elif h["estado"] != "activa":
+                            print("     -> No disponible (" + h["estado"] + ")")
+                print()
 
         elif opcion == "2":
             ui.subtitulo("Solicitar un prestamo")
@@ -413,7 +494,7 @@ def opciones_usuario():
 
         elif opcion == "3":
             ui.subtitulo("Mi historial de prestamos")
-            mios = [p for p in mod_prestamos.listar_prestamos() if p["id_usuario"] == id_usuario]
+            mios = mod_reportes.historial_usuario(id_usuario)
             if not mios:
                 ui.aviso("Todavia no tienes prestamos registrados.")
             else:

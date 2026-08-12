@@ -21,6 +21,14 @@ def pedir_telefono(mensaje):
         ui.error("El telefono debe tener exactamente 10 digitos numericos.")
 
 
+def pedir_texto_obligatorio(mensaje):
+    while True:
+        texto = input(mensaje).strip()
+        if texto:
+            return texto
+        ui.error("Este campo no puede quedar vacio.")
+
+
 def nombre_herramienta(id_herramienta):
     herramienta = mod_herramientas.buscar_herramienta(id_herramienta)
     return herramienta["nombre"] if herramienta else "Desconocida"
@@ -80,15 +88,23 @@ def mostrar_tabla_vecinos():
 
 def menu_administrador():
     ui.seccion("\U0001f6e0  MENU ADMINISTRADOR")
+    print("  -- Herramientas --")
     ui.opcion(1, "\U0001f528", "Registrar Herramienta")
     ui.opcion(2, "\U0001f4cb", "Listar Herramientas")
-    ui.opcion(3, "\U0001f464", "Registrar Vecino")
-    ui.opcion(4, "\U0001f465", "Listar Vecinos")
-    ui.opcion(5, "\u2696\ufe0f", "Aprobar / Rechazar Solicitud")
-    ui.opcion(6, "\U0001f504", "Registrar Devolucion")
-    ui.opcion(7, "\U0001f4ca", "Ver Reportes")
-    ui.opcion(8, "\u270f\ufe0f", "Actualizar Vecino")
-    ui.opcion(9, "\U0001f519", "Volver")
+    ui.opcion(3, "\U0001f50e", "Buscar Herramienta")
+    ui.opcion(4, "\u270f\ufe0f", "Actualizar Herramienta")
+    ui.opcion(5, "\U0001f6ab", "Inactivar Herramienta")
+    print("  -- Vecinos --")
+    ui.opcion(6, "\U0001f464", "Registrar Vecino")
+    ui.opcion(7, "\U0001f465", "Listar Vecinos")
+    ui.opcion(8, "\U0001f50e", "Buscar Vecino")
+    ui.opcion(9, "\u270f\ufe0f", "Actualizar Vecino")
+    ui.opcion(10, "\U0001f5d1\ufe0f", "Eliminar Vecino")
+    print("  -- Prestamos y reportes --")
+    ui.opcion(11, "\u2696\ufe0f", "Aprobar / Rechazar Solicitud")
+    ui.opcion(12, "\U0001f504", "Registrar Devolucion")
+    ui.opcion(13, "\U0001f4ca", "Ver Reportes")
+    ui.opcion(14, "\U0001f519", "Volver")
 
 
 def menu_usuario():
@@ -104,10 +120,11 @@ def opciones_administrador():
         menu_administrador()
         opcion = input("\n  Selecciona una opcion: ").strip()
 
+        # ---------- HERRAMIENTAS ----------
         if opcion == "1":
             ui.subtitulo("Registrar nueva herramienta")
-            nombre = input("  Nombre: ").strip()
-            categoria = input("  Categoria: ").strip()
+            nombre = pedir_texto_obligatorio("  Nombre: ")
+            categoria = pedir_texto_obligatorio("  Categoria: ")
             cantidad = pedir_numero_entero("  Cantidad: ")
             valor = pedir_numero_entero("  Valor estimado: ")
             nueva = mod_herramientas.crear_herramienta(nombre, categoria, cantidad, valor)
@@ -118,20 +135,138 @@ def opciones_administrador():
             mostrar_tabla_herramientas()
 
         elif opcion == "3":
+            ui.subtitulo("Buscar herramienta")
+            id_herramienta = pedir_numero_entero("  Id de la herramienta: ")
+            herramienta = mod_herramientas.buscar_herramienta(id_herramienta)
+            if herramienta:
+                ui.linea()
+                print("  ID:", herramienta["id"])
+                print("  Nombre:", herramienta["nombre"])
+                print("  Categoria:", herramienta["categoria"])
+                print("  Disponible:", herramienta["cantidad_disponible"])
+                print("  Estado:", emoji_estado(herramienta["estado"]), herramienta["estado"])
+                print("  Valor estimado:", herramienta["valor_estimado"])
+                ui.linea()
+            else:
+                ui.error("No se encontro ninguna herramienta con ese id.")
+
+        elif opcion == "4":
+            ui.subtitulo("Actualizar herramienta")
+            mostrar_tabla_herramientas()
+            id_herramienta = pedir_numero_entero("\n  Id de la herramienta a actualizar: ")
+            if mod_herramientas.buscar_herramienta(id_herramienta) is None:
+                ui.error("Esa herramienta no existe. Revisa el id en la lista de arriba.")
+            else:
+                print("\n  Que dato deseas actualizar?")
+                ui.opcion(1, "\U0001f524", "Nombre")
+                ui.opcion(2, "\U0001f3f7\ufe0f", "Categoria")
+                ui.opcion(3, "\U0001f4b2", "Valor estimado")
+                campo_opcion = input("\n  Opcion: ").strip()
+                campo = None
+                nuevo_valor = None
+                if campo_opcion == "1":
+                    nuevo_valor = pedir_texto_obligatorio("  Nuevo nombre: ")
+                    campo = "nombre"
+                elif campo_opcion == "2":
+                    nuevo_valor = pedir_texto_obligatorio("  Nueva categoria: ")
+                    campo = "categoria"
+                elif campo_opcion == "3":
+                    nuevo_valor = pedir_numero_entero("  Nuevo valor estimado: ")
+                    campo = "valor_estimado"
+                else:
+                    ui.error("Opcion invalida.")
+
+                if campo:
+                    if mod_herramientas.actualizar_herramienta(id_herramienta, campo, nuevo_valor):
+                        ui.exito("Herramienta actualizada correctamente.")
+                    else:
+                        ui.error("No se pudo actualizar.")
+
+        elif opcion == "5":
+            ui.subtitulo("Inactivar herramienta")
+            mostrar_tabla_herramientas()
+            id_herramienta = pedir_numero_entero("\n  Id de la herramienta a inactivar: ")
+            if mod_herramientas.inactivar_herramienta(id_herramienta):
+                ui.exito("Herramienta marcada como 'fuera de servicio'.")
+            else:
+                ui.error("No se pudo inactivar. Verifica el id.")
+
+        # ---------- VECINOS ----------
+        elif opcion == "6":
             ui.subtitulo("Registrar nuevo vecino")
-            nombres = input("  Nombres: ").strip()
-            apellidos = input("  Apellidos: ").strip()
+            nombres = pedir_texto_obligatorio("  Nombres: ")
+            apellidos = pedir_texto_obligatorio("  Apellidos: ")
             telefono = pedir_telefono("  Telefono (10 digitos): ")
-            direccion = input("  Direccion: ").strip()
+            direccion = pedir_texto_obligatorio("  Direccion: ")
             nuevo = mod_usuarios.crear_usuario(nombres, apellidos, telefono, direccion, "residente")
             ui.exito("Vecino registrado con ID " + str(nuevo["id"]) + " - "
                      + nuevo["nombres"] + " " + nuevo["apellidos"])
 
-        elif opcion == "4":
+        elif opcion == "7":
             ui.subtitulo("Directorio de vecinos")
             mostrar_tabla_vecinos()
 
-        elif opcion == "5":
+        elif opcion == "8":
+            ui.subtitulo("Buscar vecino")
+            id_usuario = pedir_numero_entero("  Id del vecino: ")
+            usuario = mod_usuarios.buscar_usuario(id_usuario)
+            if usuario:
+                ui.linea()
+                print("  ID:", usuario["id"])
+                print("  Nombre:", usuario["nombres"], usuario["apellidos"])
+                print("  Telefono:", usuario["telefono"])
+                print("  Direccion:", usuario["direccion"])
+                print("  Tipo:", usuario["tipo_usuario"])
+                ui.linea()
+            else:
+                ui.error("No se encontro ningun vecino con ese id.")
+
+        elif opcion == "9":
+            ui.subtitulo("Actualizar datos de un vecino")
+            mostrar_tabla_vecinos()
+            id_usuario = pedir_numero_entero("\n  Id del vecino a actualizar: ")
+            if mod_usuarios.buscar_usuario(id_usuario) is None:
+                ui.error("Ese vecino no existe. Revisa el id en la lista de arriba.")
+            else:
+                print("\n  Que dato deseas actualizar?")
+                ui.opcion(1, "\U0001f4de", "Telefono")
+                ui.opcion(2, "\U0001f3e0", "Direccion")
+                campo_opcion = input("\n  Opcion: ").strip()
+                if campo_opcion == "1":
+                    nuevo_valor = pedir_telefono("  Nuevo telefono (10 digitos): ")
+                    if mod_usuarios.actualizar_usuario(id_usuario, "telefono", nuevo_valor):
+                        ui.exito("Telefono actualizado correctamente.")
+                    else:
+                        ui.error("No se pudo actualizar.")
+                elif campo_opcion == "2":
+                    nuevo_valor = pedir_texto_obligatorio("  Nueva direccion: ")
+                    if mod_usuarios.actualizar_usuario(id_usuario, "direccion", nuevo_valor):
+                        ui.exito("Direccion actualizada correctamente.")
+                    else:
+                        ui.error("No se pudo actualizar.")
+                else:
+                    ui.error("Opcion invalida.")
+
+        elif opcion == "10":
+            ui.subtitulo("Eliminar vecino")
+            mostrar_tabla_vecinos()
+            id_usuario = pedir_numero_entero("\n  Id del vecino a eliminar: ")
+            if mod_usuarios.buscar_usuario(id_usuario) is None:
+                ui.error("Ese vecino no existe. Revisa el id en la lista de arriba.")
+            else:
+                ui.aviso("Si este vecino tiene prestamos registrados, su nombre aparecera")
+                ui.aviso("como 'Desconocido' en el historial despues de eliminarlo.")
+                confirmar = input("  Seguro que deseas eliminarlo? (S/N): ").strip().upper()
+                if confirmar == "S":
+                    if mod_usuarios.eliminar_usuario(id_usuario):
+                        ui.exito("Vecino eliminado correctamente.")
+                    else:
+                        ui.error("No se pudo eliminar.")
+                else:
+                    ui.info("Operacion cancelada.")
+
+        # ---------- PRESTAMOS Y REPORTES ----------
+        elif opcion == "11":
             ui.subtitulo("Solicitudes pendientes")
             pendientes = [p for p in mod_prestamos.listar_prestamos() if p["estado"] == "pendiente"]
             if not pendientes:
@@ -158,7 +293,7 @@ def opciones_administrador():
                 else:
                     ui.error("Opcion invalida. No se realizo ningun cambio.")
 
-        elif opcion == "6":
+        elif opcion == "12":
             ui.subtitulo("Registrar devolucion")
             activos = [p for p in mod_prestamos.listar_prestamos() if p["estado"] == "activo"]
             if not activos:
@@ -175,7 +310,7 @@ def opciones_administrador():
                 else:
                     ui.error("No se pudo registrar la devolucion. Verifica el id.")
 
-        elif opcion == "7":
+        elif opcion == "13":
             ui.subtitulo("\U0001f4c9 Herramientas con stock bajo")
             bajos = mod_reportes.stock_bajo()
             if not bajos:
@@ -215,33 +350,7 @@ def opciones_administrador():
             for item in top_u:
                 ui.item(item["nombre"] + " - " + str(item["veces"]) + " vez(ces)")
 
-        elif opcion == "8":
-            ui.subtitulo("Actualizar datos de un vecino")
-            mostrar_tabla_vecinos()
-            id_usuario = pedir_numero_entero("\n  Id del vecino a actualizar: ")
-            if mod_usuarios.buscar_usuario(id_usuario) is None:
-                ui.error("Ese vecino no existe. Revisa el id en la lista de arriba.")
-            else:
-                print("\n  Que dato deseas actualizar?")
-                ui.opcion(1, "\U0001f4de", "Telefono")
-                ui.opcion(2, "\U0001f3e0", "Direccion")
-                campo_opcion = input("\n  Opcion: ").strip()
-                if campo_opcion == "1":
-                    nuevo_valor = pedir_telefono("  Nuevo telefono (10 digitos): ")
-                    if mod_usuarios.actualizar_usuario(id_usuario, "telefono", nuevo_valor):
-                        ui.exito("Telefono actualizado correctamente.")
-                    else:
-                        ui.error("No se pudo actualizar.")
-                elif campo_opcion == "2":
-                    nuevo_valor = input("  Nueva direccion: ").strip()
-                    if mod_usuarios.actualizar_usuario(id_usuario, "direccion", nuevo_valor):
-                        ui.exito("Direccion actualizada correctamente.")
-                    else:
-                        ui.error("No se pudo actualizar.")
-                else:
-                    ui.error("Opcion invalida.")
-
-        elif opcion == "9":
+        elif opcion == "14":
             break
         else:
             ui.error("Opcion invalida. Intenta de nuevo.")

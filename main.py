@@ -29,6 +29,14 @@ def pedir_texto_obligatorio(mensaje):
         ui.error("Este campo no puede quedar vacio.")
 
 
+def pedir_numero_positivo(mensaje):
+    while True:
+        numero = pedir_numero_entero(mensaje)
+        if numero > 0:
+            return numero
+        ui.error("El numero debe ser mayor que cero.")
+
+
 def nombre_herramienta(id_herramienta):
     herramienta = mod_herramientas.buscar_herramienta(id_herramienta)
     return herramienta["nombre"] if herramienta else "Desconocida"
@@ -125,8 +133,8 @@ def opciones_administrador():
             ui.subtitulo("Registrar nueva herramienta")
             nombre = pedir_texto_obligatorio("  Nombre: ")
             categoria = pedir_texto_obligatorio("  Categoria: ")
-            cantidad = pedir_numero_entero("  Cantidad: ")
-            valor = pedir_numero_entero("  Valor estimado: ")
+            cantidad = pedir_numero_positivo("  Cantidad: ")
+            valor = pedir_numero_positivo("  Valor estimado: ")
             nueva = mod_herramientas.crear_herramienta(nombre, categoria, cantidad, valor)
             ui.exito("Herramienta registrada con ID " + str(nueva["id"]) + " - " + nueva["nombre"])
 
@@ -171,7 +179,7 @@ def opciones_administrador():
                     nuevo_valor = pedir_texto_obligatorio("  Nueva categoria: ")
                     campo = "categoria"
                 elif campo_opcion == "3":
-                    nuevo_valor = pedir_numero_entero("  Nuevo valor estimado: ")
+                    nuevo_valor = pedir_numero_positivo("  Nuevo valor estimado: ")
                     campo = "valor_estimado"
                 else:
                     ui.error("Opcion invalida.")
@@ -381,8 +389,11 @@ def opciones_usuario():
             herramienta = mod_herramientas.buscar_herramienta(id_herramienta)
             if herramienta is None:
                 ui.error("Esa herramienta no existe. Revisa el id en la lista de arriba.")
+            elif herramienta["estado"] != "activa":
+                ui.error("Esa herramienta no esta disponible (estado: "
+                         + herramienta["estado"] + ").")
             else:
-                cantidad = pedir_numero_entero("  Cantidad: ")
+                cantidad = pedir_numero_positivo("  Cantidad: ")
                 observaciones = input("  Observaciones: ").strip()
 
                 if cantidad > herramienta["cantidad_disponible"]:

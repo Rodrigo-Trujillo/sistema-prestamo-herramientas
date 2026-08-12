@@ -26,6 +26,10 @@ se documenta igual, no se oculta.
 | 17 | id_usuario=1 (Ana Gomez) | `buscar_usuario(1)` desde "Buscar Vecino" | Muestra la ficha completa: id, nombre, telefono, direccion, tipo de usuario | Mostró correctamente todos los datos de Ana Gomez | OK |
 | 18 | id_usuario=2 (Dainer Cuteño), confirmar con "S" | `eliminar_usuario(2)` desde "Eliminar Vecino" | El vecino se elimina de la lista; los ids de los demás vecinos NO se recorren (no se renumeran) | "Vecino eliminado correctamente." Listado final quedó con ids 1, 3, 4 (sin el 2) — confirmado que no se reordenan | OK |
 | 19 | Nombres, Apellidos y Direccion dejados en blanco (Enter sin escribir nada) al registrar un vecino | Registrar Vecino desde el menu | El programa no debe permitir avanzar con campos obligatorios vacios | Antes del ajuste: SI dejaba avanzar y creaba un vecino "fantasma" sin nombre. Se agrego `pedir_texto_obligatorio()` y ahora rechaza el vacio con "Este campo no puede quedar vacio." hasta llenarlo | OK (tras corrección) |
+| 20 | cantidad=0 y cantidad=-5 al registrar una herramienta | Registrar Herramienta desde el menu | No debe permitir registrar una herramienta con stock cero o negativo | Antes del ajuste: SI permitia registrar un "Serrucho" con -5 unidades. Se agrego `pedir_numero_positivo()` y ahora responde "El numero debe ser mayor que cero." | OK (tras corrección) |
+| 21 | cantidad=-3 al solicitar un prestamo, luego aprobarlo | Solicitar Prestamo + Aprobar | No debe permitir cantidades negativas | Antes del ajuste: al aprobar un prestamo de -3 unidades, el stock AUMENTABA de 5 a 8 (se "creaban" herramientas de la nada). Corregido con `pedir_numero_positivo()` | OK (tras corrección) |
+| 22 | id de una herramienta marcada como "fuera de servicio", escrito directamente | Solicitar Prestamo desde el menu vecino | No debe permitir solicitar una herramienta inactiva | Antes del ajuste: la herramienta no aparecia en la lista, pero al escribir su id directamente SI se podia solicitar y aprobar. Ahora responde "Esa herramienta no esta disponible (estado: fuera de servicio)." | OK (tras corrección) |
+| 23 | Archivo `datos/herramientas.json` modificado a mano con contenido invalido | `cargar()` en persistencia.py | El programa no debe romperse; debe avisar y continuar con lista vacia | "El archivo está dañado. Se inicia con lista vacía." El programa continuo funcionando sin cerrarse | OK (sin necesidad de corrección) |
 
 ## Notas
 
@@ -50,5 +54,14 @@ se documenta igual, no se oculta.
   según la rúbrica del proyecto (Buscar y Actualizar para Herramientas;
   Buscar y Eliminar para Vecinos), que ya existían como funciones en los
   módulos pero no estaban conectadas al menú de `main.py`.
+- Los casos 19 a 22 son especialmente valiosos porque el programa **no se
+  rompia** en ninguno de ellos: aceptaba silenciosamente datos invalidos
+  (un vecino sin nombre, una herramienta con stock negativo, un prestamo
+  que aumentaba el inventario en vez de reducirlo). Son fallas mas dificiles
+  de detectar que un error visible, y se encontraron probando a proposito
+  entradas que un usuario normal no escribiria.
+- El caso 23 es el unico de este grupo que paso sin necesidad de corregir
+  nada: el `try/except` de `persistencia.py` ya protegia contra archivos JSON
+  danados desde el inicio.
 - Todas las pruebas se ejecutaron directamente en la terminal del proyecto,
   con `python main.py`, en la máquina de Rodrigo Trujillo.
